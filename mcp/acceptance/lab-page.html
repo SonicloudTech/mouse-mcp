@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>uMouse Mouse Capability Lab</title>
+<style>
+  :root { --bg:#0f1420; --panel:#1a2233; --line:#2c3a55; --tx:#e8eefc; --dim:#8fa3c8; --ok:#38d17c; --warn:#f0b429; --bad:#f0564a; --acc:#4f8ef7; }
+  * { box-sizing:border-box; margin:0; padding:0; user-select:none; }
+  body { background:var(--bg); color:var(--tx); font:14px/1.45 "Segoe UI",system-ui,sans-serif; padding:14px; }
+  h1 { font-size:17px; display:flex; align-items:center; gap:10px; }
+  h1 .dot { width:10px; height:10px; border-radius:50%; background:var(--bad); }
+  h1 .dot.on { background:var(--ok); }
+  h1 small { color:var(--dim); font-weight:400; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
+  .zone { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; position:relative; }
+  .zone h2 { font-size:13px; color:var(--dim); font-weight:600; margin-bottom:6px; }
+  .zone h2 b { color:var(--tx); }
+  .big { font-size:34px; font-weight:700; text-align:center; padding:8px 0; font-variant-numeric:tabular-nums; }
+  .hint { font-size:11px; color:var(--dim); text-align:center; }
+  .btnzone { cursor:pointer; transition:background .08s; }
+  .btnzone:active, .btnzone.flash { background:#243352; }
+  #wheelBox { height:150px; overflow-y:scroll; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:12px; color:var(--dim); }
+  #wheelBox div { padding:1px 0; }
+  #dragCanvas { background:#0b101c; border:1px solid var(--line); border-radius:8px; display:block; width:100%; height:150px; cursor:crosshair; touch-action:none; }
+  #bullCanvas { display:block; margin:0 auto; cursor:crosshair; }
+  .wide { grid-column:span 3; }
+  .duo { grid-column:span 2; }
+  #log { font:11px/1.5 Consolas,monospace; color:var(--dim); height:96px; overflow:hidden; margin-top:6px; }
+  #log .new { color:var(--tx); }
+  .stat { display:inline-block; margin:2px 6px 0 0; font-size:12px; color:var(--dim); }
+  .stat b { color:var(--tx); }
+  #precList { font-size:12px; color:var(--dim); text-align:center; min-height:32px; }
+  #precList b { color:var(--ok); }
+  #dblState { text-align:center; font-size:13px; color:var(--dim); padding:14px 0; }
+  #dblState b { color:var(--tx); font-size:20px; }
+</style>
+</head>
+<body>
+<h1><span class="dot" id="srvDot"></span> uMouse 硬件鼠标能力实验室 <small>Mouse Capability Lab · 真实网页验证靶场</small></h1>
+<div class="grid">
+  <div class="zone btnzone" id="zLeft"><h2><b>左键</b> LEFT</h2><div class="big" id="cLeft">0</div><div class="hint">单击计数</div></div>
+  <div class="zone btnzone" id="zRight"><h2><b>右键</b> RIGHT</h2><div class="big" id="cRight">0</div><div class="hint">右键计数（菜单已接管）</div></div>
+  <div class="zone btnzone" id="zMiddle"><h2><b>中键</b> MIDDLE</h2><div class="big" id="cMiddle">0</div><div class="hint">中键计数（自动滚动已禁用）</div></div>
+  <div class="zone btnzone duo" id="zDouble"><h2><b>双击</b> DOUBLE</h2><div id="dblState">dblclick 事件 <b id="cDouble">0</b> 次<br><span id="dblInterval">等待最近一次双击间隔…</span></div></div>
+  <div class="zone" id="zBull"><h2><b>精度靶</b> PRECISION (1px)</h2><canvas id="bullCanvas" width="170" height="150"></canvas><div id="precList">点击靶心，报告落点偏差</div></div>
+  <div class="zone" id="zWheel"><h2><b>滚轮</b> WHEEL <span class="stat">scrollTop=<b id="wheelPos">0</b></span></h2>
+    <div id="wheelBox"></div><div class="hint">向下滚动查看内容上移</div></div>
+  <div class="zone wide" id="zDrag"><h2><b>拖拽画布</b> DRAG CANVAS</h2>
+    <canvas id="dragCanvas" width="640" height="150"></canvas>
+    <div id="log"></div></div>
+</div>
+<script>
+'use strict';
+const $$ = id => document.getElementById(id);
+const post = (url, body) => fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }).catch(()=>{});
+let seq = 0, lastClickAt = 0;
+const state = { left:0, right:0, middle:0, dbl:0, wheelEvents:0, scrollTop:0, precision:[], drags:[], calib:null };
+
+// ---- Physical-screen coordinate self-calibration --------------------------
+// Chrome/Edge report window.screenX and event.screenX in CSS pixels; physical
+// desktop pixels = css * devicePixelRatio. Window frame is estimated from
+// outer/inner size differences. Good to ±1-2px on a single-monitor setup.
+let physCorr = { x: 0, y: 0 }; // 由真实点击事件反推的标定校正（窗口边框估计偏差）
+function physOf(el) {
+  const dpr = window.devicePixelRatio || 1;
+  const r = el.getBoundingClientRect();
+  const bx = Math.max(0, (window.outerWidth - window.innerWidth) / 2);
+  const by = Math.max(0, window.outerHeight - window.innerHeight - bx);
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  return { x: Math.round((window.screenX + bx + cx) * dpr + physCorr.x), y: Math.round((window.screenY + by + cy) * dpr + physCorr.y),
+           w: Math.round(r.width * dpr), h: Math.round(r.height * dpr), dpr };
+}
+// 每次真实按下都可用 e.screenX（物理真值）校正原点估计，并重注册目标。
+function calibrateFromEvent(e, el) {
+  const dpr = window.devicePixelRatio || 1;
+  const r = el.getBoundingClientRect();
+  const trueCx = Math.round(e.screenX * dpr + (r.left + r.width / 2 - e.clientX));
+  const trueCy = Math.round(e.screenY * dpr + (r.top + r.height / 2 - e.clientY));
+  const est = physOf(el);
+  const dx = trueCx - est.x, dy = trueCy - est.y;
+  if (Math.abs(dx) <= 12 && Math.abs(dy) <= 12 && (dx || dy)) {
+    physCorr = { x: physCorr.x + dx, y: physCorr.y + dy };
+    registerTargets();
+  }
+}
+function registerTargets() {
+  // 靶心与拖拽的目标点取"画布元素"中心，而不是包含标题/说明的外层 div 中心。
+  const source = { zBull: $$('bullCanvas'), zDrag: $$('dragCanvas') };
+  const ids = ['zLeft','zRight','zMiddle','zDouble','zBull','zWheel','zDrag'];
+  const zones = ids.map(id => { const p = physOf(source[id] || $$(id)); return { id, ...p }; });
+  state.calib = { dpr: window.devicePixelRatio || 1, screenX: window.screenX, screenY: window.screenY,
+    innerW: window.innerWidth, innerH: window.innerHeight };
+  post('/api/targets', { zones, calib: state.calib });
+}
+// ---- Event plumbing --------------------------------------------------------
+function ev(type, zone, extra) {
+  const e = extra && extra.e;
+  const dpr = window.devicePixelRatio || 1;
+  const payload = { seq: ++seq, type, zone, ts: performance.now(),
+    screenPhys: e ? { x: Math.round(e.screenX * dpr), y: Math.round(e.screenY * dpr) } : null, ...extra?.data };
+  post('/api/event', { event: payload, state: snapshot() });
+  logLine(payload);
+}
+function snapshot() { return { ...state, at: performance.now() }; }
+function logLine(p) {
+  const el = $$('log');
+  const line = document.createElement('div'); line.className = 'new';
+  line.textContent = `#${p.seq} ${p.type} ${p.zone||''} ${p.screenPhys ? '@'+p.screenPhys.x+','+p.screenPhys.y : ''} ${p.data||''}`;
+  el.prepend(line);
+  while (el.children.length > 7) el.lastChild.remove();
+}
+const bindZone = (id, name) => {
+  const z = $$(id);
+  z.addEventListener('mouseenter', e => ev('enter', name, { e }));
+  z.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); calibrateFromEvent(e, z); ev('down', name, { e, data:{ btn:e.button } }); });
+  z.addEventListener('mouseup', e => ev('up', name, { e, data:{ btn:e.button } }));
+};
+bindZone('zLeft','left'); bindZone('zRight','right'); bindZone('zMiddle','middle');
+bindZone('zDouble','double'); bindZone('zWheel','wheel');
+$$('zLeft').addEventListener('click', e => { state.left++; $$('cLeft').textContent = state.left; ev('click','left',{ e, data:{ count:state.left } }); });
+$$('zRight').addEventListener('contextmenu', e => { e.preventDefault(); });
+$$('zRight').addEventListener('mousedown', e => { if (e.button === 2) { state.right++; $$('cRight').textContent = state.right; ev('contextmenu','right',{ e, data:{ count:state.right } }); } });
+$$('zMiddle').addEventListener('auxclick', e => { if (e.button === 1) { state.middle++; $$('cMiddle').textContent = state.middle; ev('auxclick','middle',{ e, data:{ count:state.middle } }); } });
+document.addEventListener('contextmenu', e => e.preventDefault());
+$$('zDouble').addEventListener('click', e => {
+  const now = performance.now();
+  const interval = lastClickAt ? Math.round(now - lastClickAt) : null;
+  lastClickAt = now;
+  ev('click','double',{ e, data:{ interval } });
+});
+$$('zDouble').addEventListener('dblclick', e => {
+  state.dbl++; $$('cDouble').textContent = state.dbl;
+  $$('dblInterval').textContent = '最近间隔 ' + (lastClickAt ? '≈' + Math.round(performance.now() - lastClickAt) + 'ms 前次点击' : '?');
+  ev('dblclick','double',{ e, data:{ count:state.dbl } });
+});
+// ---- Wheel ------------------------------------------------------------------
+const box = $$('wheelBox');
+for (let i = 1; i <= 120; i++) { const d = document.createElement('div'); d.textContent = `wheel line ${String(i).padStart(3,'0')} — 滚动内容`; box.appendChild(d); }
+box.addEventListener('wheel', e => { state.wheelEvents++; ev('wheel','wheel',{ e, data:{ deltaY:Math.round(e.deltaY) } }); }, { passive:true });
+box.addEventListener('scroll', () => { state.scrollTop = Math.round(box.scrollTop); $$('wheelPos').textContent = state.scrollTop; ev('scroll','wheel',{ data:{ scrollTop:state.scrollTop } }); });
+// ---- Drag canvas -------------------------------------------------------------
+const dc = $$('dragCanvas'), dctx = dc.getContext('2d');
+dctx.strokeStyle = '#4f8ef7'; dctx.lineWidth = 3; dctx.lineCap = 'round';
+let dragPath = null;
+dc.addEventListener('mousedown', e => { if (e.button !== 0) return;
+  try { dc.setPointerCapture(e.pointerId); } catch { /* pointer capture 不可用时依赖命中测试 */ }
+  calibrateFromEvent(e, dc);
+  dragPath = [{ x:e.offsetX, y:e.offsetY, t:performance.now() }]; ev('dragStart','drag',{ e, data:{ x:e.offsetX, y:e.offsetY } }); });
+dc.addEventListener('mousemove', e => { if (!dragPath) return; const p = dragPath[dragPath.length-1]; if (Math.hypot(e.offsetX-p.x, e.offsetY-p.y) < 2) return;
+  dragPath.push({ x:e.offsetX, y:e.offsetY, t:performance.now() });
+  dctx.beginPath(); dctx.moveTo(p.x,p.y); dctx.lineTo(e.offsetX,e.offsetY); dctx.stroke(); });
+dc.addEventListener('mouseup', e => { if (e.button !== 0 || !dragPath) return;
+  const path = dragPath; dragPath = null;
+  const s = path[0], en = path[path.length-1];
+  const dx = en.x-s.x, dy = en.y-s.y, len = Math.hypot(dx,dy) || 1;
+  const maxDev = Math.max(...path.map(p => Math.abs((p.x-s.x)*dy-(p.y-s.y)*dx)/len));
+  const rec = { start:{x:s.x,y:s.y}, end:{x:en.x,y:en.y}, samples:path.length, maxDev:Math.round(maxDev*10)/10, ms:Math.round(en.t-s.t) };
+  state.drags.push(rec); if (state.drags.length > 12) state.drags.shift();
+  ev('dragEnd','drag',{ e, data:rec }); });
+// ---- Precision bullseye -------------------------------------------------------
+const bc = $$('bullCanvas'), bctx = bc.getContext('2d');
+const BC = { x:85, y:75, rings:[62,26,5] };
+function drawBull(hit) {
+  bctx.clearRect(0,0,bc.width,bc.height);
+  const palette = ['#2c3a55','#3a4d75','#f0b429'];
+  BC.rings.forEach((r,i) => { bctx.beginPath(); bctx.arc(BC.x,BC.y,r,0,7); bctx.fillStyle=palette[i]; bctx.fill(); });
+  bctx.fillStyle = '#0f1420'; bctx.beginPath(); bctx.arc(BC.x,BC.y,1.2,0,7); bctx.fill();
+  if (hit) { bctx.strokeStyle='#38d17c'; bctx.lineWidth=1.5; bctx.beginPath(); bctx.arc(hit.x,hit.y,4,0,7); bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(hit.x-7,hit.y); bctx.lineTo(hit.x+7,hit.y); bctx.moveTo(hit.x,hit.y-7); bctx.lineTo(hit.x,hit.y+7); bctx.stroke(); }
+}
+drawBull();
+bc.addEventListener('click', e => {
+  calibrateFromEvent(e, bc);
+  const dx = e.offsetX - BC.x, dy = e.offsetY - BC.y, dist = Math.round(Math.hypot(dx,dy)*10)/10;
+  const ring = dist<=BC.rings[2] ? 'BULLSEYE' : dist<=BC.rings[1] ? 'inner' : dist<=BC.rings[0] ? 'outer' : 'miss';
+  state.precision.push({ dx, dy, dist, ring }); if (state.precision.length > 12) state.precision.shift();
+  drawBull({ x:e.offsetX, y:e.offsetY });
+  $$('precList').innerHTML = state.precision.slice(-3).reverse().map(p => `Δ(${p.dx<0?'':'+'}${p.dx},${p.dy<0?'':'+'}${p.dy}) = <b>${p.dist}px</b> ${p.ring}`).join('<br>');
+  ev('click','bull',{ e, data:{ dx, dy, dist, ring } });
+});
+// ---- Boot --------------------------------------------------------------------
+registerTargets();
+window.addEventListener('resize', () => setTimeout(registerTargets, 120));
+setInterval(registerTargets, 2000);
+post('/api/hello', { calib: state.calib, at: performance.now() }).then(() => $$('srvDot').classList.add('on'));
+</script>
+</body>
+</html>

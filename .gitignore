@@ -1,0 +1,17 @@
+# 依赖与构建产物（源码入库，产物本地重建）
+node_modules/
+/mcp/dist/
+/mcp/sdk-host/bin/
+/mcp/sdk-host/build/
+/mcp/sdk-host/build-*/
+/mcp/hardware-demo/build/
+/mcp/voice-ui/target/
+
+# 运行产物
+/mcp/acceptance/acceptance-report.json
+
+# 本地环境
+*.log
+.DS_Store
+Thumbs.db
+release/

@@ -1,0 +1,12 @@
+[package]
+name = "umouse-voice-ui"
+version = "0.1.0"
+edition = "2021"
+
+# 零外部依赖：Win32 经手写 FFI 声明（user32/gdi32/kernel32），离线可构建。
+[dependencies]
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"

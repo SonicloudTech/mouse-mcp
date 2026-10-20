@@ -1,0 +1,37 @@
+{
+  "name": "umouse-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Sonicloud uMouse SDK (smart mouse hardware for agents)",
+  "private": true,
+  "main": "mcp/dist/index.js",
+  "bin": {
+    "umouse-mcp": "mcp/dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test mcp/test/audit.test.mjs mcp/test/bridge.test.mjs mcp/test/installer.test.mjs mcp/test/feedback.test.mjs mcp/test/takeover.test.mjs mcp/test/iteration.test.mjs mcp/test/sleep-reset.test.mjs mcp/test/transcriber.test.mjs mcp/test/voice.test.mjs mcp/test/voice-protocol.test.mjs mcp/test/voice-relay.test.mjs mcp/test/codex-voice-queue.test.mjs mcp/test/sdk-lease.test.mjs mcp/test/entry-ownership.test.mjs mcp/test/capabilities.test.mjs mcp/test/voice-session.test.mjs mcp/test/voice-bridge.test.mjs mcp/test/sinicloud-asr.test.mjs mcp/test/asr-preview.test.mjs mcp/test/voice-vad.test.mjs mcp/test/voice-ui.test.mjs mcp/test/voice-typer.test.mjs mcp/test/hardware-action.test.mjs mcp/test/audit-voice-regression.test.mjs mcp/test/voice-repair.test.mjs && node mcp/test/inject.test.mjs",
+    "diagnostic": "node mcp/test/diagnostic.mjs",
+    "start": "node mcp/dist/index.js",
+    "smoke": "node mcp/test/smoke.mjs",
+    "package": "node mcp/scripts/package.mjs",
+    "install:agents": "node mcp/scripts/install-agents.mjs",
+    "test:voice-audit": "npm run build && node --test mcp/test/audit-voice-regression.test.mjs mcp/test/audit-bridge-regression.test.mjs mcp/test/voice-repair.test.mjs",
+    "build:sdk-host": "powershell.exe -NoProfile -File mcp/sdk-host/build.ps1",
+    "build:sdk-host:test": "powershell.exe -NoProfile -File mcp/sdk-host/build.ps1 -Test",
+    "test:shared": "npm run build && node mcp/scripts/check-native-build.mjs && node --test mcp/test/native-host.test.mjs mcp/test/native-adapters.test.mjs mcp/test/shared-lifecycle.test.mjs mcp/test/shared-voice.test.mjs mcp/test/shared-transport.test.mjs mcp/test/shared-reconnect.test.mjs mcp/test/shared-input.test.mjs mcp/test/hardware-protocol.test.mjs mcp/test/shared-installation.test.mjs mcp/test/input-diagnostics.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "gifenc": "^1.0.3",
+    "koffi": "^2.9.0",
+    "pngjs": "^7.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
