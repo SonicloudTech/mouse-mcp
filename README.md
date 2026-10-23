@@ -1,17 +1,67 @@
-# umouse-mcp
+# uMouse MCP — Hardware Mouse Control for AI Agents
 
 **English** | [简体中文](README.zh-CN.md)
 
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)](#)
-[![asr](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#voice-dictation-pluggable-asr-providers)
-[![language](https://img.shields.io/badge/lang-C%2B%2B%20%7C%20TypeScript-007ec6.svg)](#)
+[![release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+[![code license](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
+![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)
+[![ASR](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#voice-dictation-pluggable-asr-providers)
 
-Give large models a **real mouse**. umouse-mcp is a Model Context Protocol (MCP) server: every move, click, scroll and drag leaves the machine as HID frames through a uMouse USB device and is processed by the OS exactly like a physical mouse — **zero software injection**.
+Give AI agents a **real hardware mouse**. uMouse MCP is a Model Context Protocol (MCP) server for USB HID mouse control and voice dictation on Windows. Mouse movement, clicks, scrolling and dragging use a compatible uMouse device; voice input supports pluggable speech recognition providers.
 
-> Model → MCP host → shared daemon (`:47192`) → C++ native host → USB HID `0xF0/0xF1` → uMouse device → Windows input pipeline
+**Requires compatible uMouse hardware and firmware, Windows x64, and a separately installed Node.js runtime (use Node.js 22 x64).** An ordinary USB mouse is not sufficient. The MIT license covers the server code; native SDK binaries have separate terms. See [License](#license).
 
-## Demo
+[Download](#download) · [Quick start](#quick-start) · [Reference demos](#reference-demos) · [Documentation](#documentation) · [Get hardware / support](#hardware--support) · [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk)
+
+## Download
+
+| Package | Download | Requirements |
+|---|---|---|
+| Windows x64 · v0.1.0 | [Download ZIP](https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.0/umouse-mcp-os-win-x64-0.1.0.zip) · [Release notes and SHA-256](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0) | Compatible uMouse device and firmware; Node.js installed separately |
+
+[All releases](https://github.com/SonicloudTech/mouse-mcp/releases) · [Gitee release mirror](https://gitee.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+
+The ZIP includes production Node dependencies, native SDK DLLs, the voice preview UI and VC runtime libraries. No `npm install` or compilation is required to use the release; Node.js itself is **not** bundled.
+
+**Release and source are different installation paths:** the v0.1.0 installer registers the legacy stdio entry, `mcp/dist/index.js`. The shared-v2 tools, native host and acceptance lab described below belong to the source implementation. This ZIP is not a complete shared-v2 bundle: it does not contain that native host or the acceptance lab. Use the installed server's tool list and the README shipped inside the ZIP for release-specific behavior.
+
+## Quick start
+
+1. Install Node.js 22 x64 and confirm `node --version` works. Connect a compatible uMouse USB receiver/device and power on the mouse. For a device or firmware compatibility check, see [Hardware & support](#hardware--support).
+2. Download the ZIP above and extract it. Open the `umouse-mcp-os-win-x64` folder; keep it in a permanent location because client configuration points to this folder.
+3. Double-click `install-agents.cmd` to register **ZCode at user scope**, or run **one** command for your chosen client from the extracted folder:
+
+| Client | PowerShell command |
+|---|---|
+| ZCode | `node mcp/scripts/install-agents.mjs zcode` |
+| Claude Desktop | `node mcp/scripts/install-agents.mjs claude` |
+| Cursor | `node mcp/scripts/install-agents.mjs cursor` |
+
+The installer adds or updates the `umouse` entry in the selected client's configuration. It also copies the bundled trial ASR configuration into the local data directory if no configuration already exists. Replace trial credentials with your own for production use.
+
+4. Open a new ZCode session, fully quit and reopen Claude Desktop, or reload the Cursor window, as appropriate.
+5. Ask your agent to call `umouse_status`, `umouse_get_capabilities`, and `umouse_list_devices`. Check SDK health, the device list, and the reported capabilities. A returned `sdkVersion` only confirms SDK access; it does **not** prove that hardware control works. Confirm the visible result of any requested mouse action before relying on it.
+
+For a client that accepts the `mcpServers` JSON format, add this entry manually, replacing the path with your extracted folder. Other clients may require a different configuration format.
+
+```json
+{
+  "mcpServers": {
+    "umouse": {
+      "command": "node",
+      "args": ["C:\\path\\to\\umouse-mcp-os-win-x64\\mcp\\dist\\index.js"]
+    }
+  }
+}
+```
+
+Manual configuration does not run the installer's ASR setup. Configure a speech provider separately if you need voice dictation; see [Voice dictation](#voice-dictation-pluggable-asr-providers).
+
+For source development, `npm ci`, `npm run build`, and `npm test` install dependencies, build TypeScript, and run the default tests. They do not produce a complete shared-v2 native bundle. A complete public shared-v2 packaging workflow is not yet provided. The [shared-v2 development and maintenance notes (Chinese)](mcp/SHARED-V2.md) and [native host build notes (Chinese)](mcp/sdk-host/README.md) are references for that separate development path.
+
+## Reference demos
+
+The mouse lab recording demonstrates the shared-v2 source implementation, not the legacy ZIP installation.
 
 Hardware mouse driving a real browser lab page (gold arrow = system cursor overlaid on the recording) — counters, wheel and hit feedback all come from real browser events:
 
@@ -25,11 +75,17 @@ Hold the device voice key, speak, release — the recognized text is typed into 
 
 <video src="mcp/acceptance/demo/voice-typing-agent.mp4" controls muted width="720">mcp/acceptance/demo/voice-typing-agent.mp4</video>
 
+[Open / download video](mcp/acceptance/demo/voice-typing-agent.mp4)
+
 **WeChat** — spoken message typed into the input box and sent:
 
 <video src="mcp/acceptance/demo/voice-typing-wechat.mp4" controls muted width="720">mcp/acceptance/demo/voice-typing-wechat.mp4</video>
 
-## Key capabilities
+[Open / download video](mcp/acceptance/demo/voice-typing-wechat.mp4)
+
+## Shared-v2 capabilities (source implementation)
+
+> Model → MCP host → shared daemon (`:47192`) → C++ native host → USB HID `0xF0/0xF1` → uMouse device → Windows input pipeline
 
 - **Hardware actions**: `umouse_mouse_action` — move / click / scroll / drag in desktop physical-pixel coordinates, multi-monitor with negative coords, optional `precision: standard | high`.
 - **Task exclusivity**: `umouse_control` begin → actions → end; only one task drives the mouse and keyboard at a time; dead connections are cleaned up automatically.
@@ -49,11 +105,11 @@ ASR here is not a black box tied to one vendor — it is a tiny interface contra
 | `http` | Custom transcription endpoint: multipart WAV in, `{"text"}` out |
 | `disabled` | Dictation off; a missing provider degrades gracefully to `asr_unavailable` |
 
-Credentials travel only through configuration and are **hot-read per session — swap keys without a restart**: by default a JSON file at `<data-dir>/sinicloud_asr.json` (`appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`); environment variables `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` override the file. Never hardcoded, never printed, never logged, never committed. The release bundle ships a **trial credential** for the open platform so dictation works out of the box; replace it with your own key for production use. See `mcp/SHARED-V2.md` for the full provider matrix.
+Credentials travel only through configuration and are **hot-read per session — swap keys without a restart**: by default a JSON file at `<data-dir>/sinicloud_asr.json` (`appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`); environment variables `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` override the file. Never hardcoded, never printed, never logged, never committed. The release bundle ships a **trial credential** for the open platform so dictation works out of the box; replace it with your own key for production use. See [mcp/SHARED-V2.md](mcp/SHARED-V2.md) for the full provider matrix.
 
-## Cross-machine adaptive positioning
+## Shared-v2 adaptive positioning
 
-Windows pointer ballistics ("Enhance pointer precision") make the protocol-dots → pixels gain vary with amplitude. umouse-mcp ships an 11-step ballistic gain curve: read-only seeded from local pointer settings on first use of a device, learned online frame-by-frame within `[0.125, 10]`, decaying back to the seed after 60 s idle — **no tuning when you change machines or devices**; a stale seed costs 1–2 extra frames. Design and measurements: `mcp/sdk-host/POSITIONING.md`.
+Windows pointer ballistics ("Enhance pointer precision") make the protocol-dots → pixels gain vary with amplitude. umouse-mcp ships an 11-step ballistic gain curve: read-only seeded from local pointer settings on first use of a device, learned online frame-by-frame within `[0.125, 10]`, decaying back to the seed after 60 s idle — **no tuning when you change machines or devices**; a stale seed costs 1–2 extra frames. Design and measurements: [mcp/sdk-host/POSITIONING.md](mcp/sdk-host/POSITIONING.md).
 
 | Metric | standard | high |
 |---|---|---|
@@ -61,35 +117,21 @@ Windows pointer ballistics ("Enhance pointer precision") make the protocol-dots 
 | Measured (reference rig) | median 356 ms / 2 frames | max 1 px, mean 0.67 px |
 | Failure mode | identical; high at worst degrades to ≤ 4 px best-effort, residuals reported as-is | |
 
-## One-command acceptance
+## Shared-v2 reference acceptance
+
+After preparing a complete shared-v2 build, follow the [acceptance setup guide](mcp/acceptance/README.md). The lab is in this repository, not the v0.1.0 ZIP.
 
 32 cases verify effects in closed loop on a real browser page: left / right / middle click counts, double-click interval, wheel `scrollTop`, drag linearity, 1 px bullseye hits.
 
-```bash
+```powershell
 cd mcp/acceptance
-UMCFG=<client.json> UMBUNDLE=<bundle> node run-matrix.mjs
-# writes acceptance-report.json · exit code 0 = all green (reference run 32/32)
+$env:UMCFG = "C:\path\to\client.json"
+$env:UMBUNDLE = "C:\path\to\shared-v2-bundle"
+node run-matrix.mjs
+# Writes acceptance-report.json; the documented reference run passed 32/32 cases.
 ```
 
-## Quick start
-
-1. Bring your own uMouse USB device (VID:PID `0ABC9:0CA89`); Windows x64 + Node.js 22.
-2. Download the self-contained bundle `umouse-mcp-os-win-x64-*.zip` from [Releases](../../releases), unzip anywhere.
-3. Double-click `install-agents.cmd` (ZCode by default; `claude` / `cursor` / `all` supported), or add manually:
-
-```json
-{
-  "mcpServers": {
-    "umouse": { "command": "node", "args": ["C:\\path\\to\\umouse-mcp-os-win-x64\\mcp\\dist\\index.js"] }
-  }
-}
-```
-
-4. Ask your agent to call `umouse_status` — `sdkVersion` in the reply means you are connected.
-
-Build from source: `npm ci && npm run build && npm test` (Windows x64; native SDK ships as DLLs + public header, see `include/umouse_sdk.h`).
-
-## Security model
+## Shared-v2 security and verification
 
 - Locked screen / UAC / secure desktop: key actions are rejected with `button_feedback_input_desktop_unavailable` — that is a safety property, not a bug.
 - `effectConfirmed` is always `false`: transport success ≠ application effect; the acceptance lab's page evidence is the ground truth.
@@ -99,12 +141,14 @@ Build from source: `npm ci && npm run build && npm test` (Windows x64; native SD
 
 | Doc | Contents |
 |---|---|
-| `mcp/SHARED-V2.md` | Shared-v2 install, upgrade, maintenance and recovery |
-| `mcp/acceptance/MOUSE-CAPABILITY-TESTS.md` | The 32-case catalog (copy-paste MCP calls and pass criteria) |
-| `mcp/sdk-host/POSITIONING.md` | Ballistic positioning: history, algorithm, cross-device matrix |
-| `mcp/README.md` | Full MCP tool reference (Chinese) |
+| [mcp/SHARED-V2.md](mcp/SHARED-V2.md) | Shared-v2 install, upgrade, maintenance and recovery |
+| [mcp/acceptance/MOUSE-CAPABILITY-TESTS.md](mcp/acceptance/MOUSE-CAPABILITY-TESTS.md) | The 32-case catalog (copy-paste MCP calls and pass criteria) |
+| [mcp/sdk-host/POSITIONING.md](mcp/sdk-host/POSITIONING.md) | Ballistic positioning: history, algorithm, cross-device matrix |
+| [mcp/README.md](mcp/README.md) | Full MCP tool reference (Chinese) |
 
-## Commercial & Support
+## Hardware & support
+
+Need a compatible device, evaluation unit or firmware check? Contact [xu_heng_yu@sinicloud.com](mailto:xu_heng_yu@sinicloud.com) with your target platform, device model, firmware version and intended use case.
 
 Maintained by [SonicloudTech](https://github.com/SonicloudTech) (Anhui SoniCloud Intelligent Technology Co., Ltd.) — AI input hardware and the speech open platform.
 
@@ -113,6 +157,10 @@ Maintained by [SonicloudTech](https://github.com/SonicloudTech) (Anhui SoniCloud
 - Business & technical contact: [xu_heng_yu@sinicloud.com](mailto:xu_heng_yu@sinicloud.com) — OEM / distribution / custom firmware / co-development; include the target platform, expected volume, device model, firmware version and intended use case
 
 <img src="img/微信.png" alt="SoniCloud contact QR code" width="200" style="max-width: 100%; height: auto;">
+
+## Related project: uMouse SDK
+
+Integrating smart-mouse hardware into your own application? [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk) provides a C ABI for USB HID/BLE device connections, key events and audio. Start with the [English SDK README](https://github.com/SonicloudTech/mouse-sdk/blob/main/README.en.md), [integration guide](https://github.com/SonicloudTech/mouse-sdk/blob/main/docs/Integration-Guide.en.md), or [SDK downloads](https://github.com/SonicloudTech/mouse-sdk/releases). The SDK has its own platform and licensing matrix; those platform options do not extend this MCP server beyond Windows x64. Use the native SDK DLLs bundled with each MCP release rather than substituting a standalone SDK package.
 
 ## Roadmap
 
@@ -124,4 +172,4 @@ Maintained by [SonicloudTech](https://github.com/SonicloudTech) (Anhui SoniCloud
 
 ## License
 
-Code is released under the [MIT license](LICENSE). The native SDK ships as closed-source DLLs with a public header (`include/umouse_sdk.h`).
+The MCP server code is released under the [MIT license](LICENSE). The native SDK ships as closed-source DLLs with a public header (`include/umouse_sdk.h`).
