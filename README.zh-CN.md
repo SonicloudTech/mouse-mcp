@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-[![release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+[![release](https://img.shields.io/badge/MCPB-v0.1.1-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1)
 [![code license](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)
 [![ASR](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#语音听写asr-provider-可插拔)
@@ -17,15 +17,20 @@
 
 | 发布包 | 下载入口 | 使用要求 |
 |---|---|---|
+| MCPB · Windows x64 · v0.1.1 | [下载 MCPB](https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.1/umouse-mcp-0.1.1-win-x64.mcpb) · [版本说明与 SHA-256](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1) | 支持 MCPB 的客户端；兼容 uMouse 硬件；x64 Node.js 22+ |
 | Windows x64 · v0.1.0 | [下载 ZIP](https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.0/umouse-mcp-os-win-x64-0.1.0.zip) · [版本说明与 SHA-256](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0) | 兼容的 uMouse 设备与固件；单独安装 Node.js |
 
 [全部版本](https://github.com/SonicloudTech/mouse-mcp/releases) · [Gitee 发布镜像](https://gitee.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+
+**MCPB 安装：** 在支持 MCPB Node 扩展的客户端中导入 `.mcpb`。0.1.1 封装旧版 0.1.0 运行文件，不含云端凭据，语音识别默认 `disabled`，可选本地 `windows-speech`。数据默认存入 `~/.umouse-mcp-mcpb`，详见 [MCPB 中英文指南](mcpb/README.md)。Registry 元数据名称为 `io.github.SonicloudTech/mouse-mcp`，定义于 [`server.json`](server.json)，参见[发布与验证说明](mcpb/PUBLISHING.md)。
 
 ZIP 包内包含生产环境 Node 依赖、原生 SDK DLL、语音预览浮窗和 VC 运行库。使用发布包无需执行 `npm install` 或编译；**包内不含 Node.js 本身**。
 
 **发布包与源码采用不同的安装路径：** v0.1.0 安装器注册的是旧版 stdio 入口 `mcp/dist/index.js`。下文的共享 v2 工具、原生宿主与验收实验室属于源码实现。此 ZIP 不包含该原生宿主与验收实验室，不能作为完整的共享 v2 发布包使用。发布版的具体能力以已安装服务器提供的工具列表及 ZIP 内随附 README 为准。
 
 ## 快速开始
+
+以下步骤使用原 ZIP。MCPB 请按上文导入，再执行第 5 步的状态与设备检查。
 
 1. 安装 Node.js 22 x64，确认 `node --version` 可运行。连接兼容的 uMouse USB 接收器或设备并打开鼠标电源。设备与固件兼容性确认见[硬件与支持](#硬件与支持)。
 2. 下载上方 ZIP 并解压，打开 `umouse-mcp-os-win-x64` 文件夹。请将其放在固定位置，客户端配置会引用此目录。
@@ -99,13 +104,13 @@ ASR 在这里不是绑死某家服务的黑盒，而是一个很小的接口约�
 
 | provider（`UMSDK_ASR_PROVIDER`） | 说明 |
 |---|---|
-| `sinicloud`（Windows 默认） | Sonicloud 开放平台流式识别：纯 TS、无 DLL 依赖；16k/16bit/mono PCM 实时推送，中间结果预览，低额预警不断流 |
+| `sinicloud`（旧 ZIP / 源码在 Windows 上的默认值） | Sonicloud 开放平台流式识别：纯 TS、无 DLL 依赖；16k/16bit/mono PCM 实时推送，中间结果预览，低额预警不断流 |
 | `windows-speech` | Windows 内置识别器，离线执行，音频不出本机 |
 | `whisper-cpp` | 自部署 whisper-cli + ggml 模型（路径自配），CPU 离线转写 |
 | `http` | 自定义转写端点：multipart WAV 进、`{"text"}` 出 |
 | `disabled` | 关闭听写；provider 缺失时优雅降级为 `asr_unavailable` |
 
-凭据只走配置通道，**每会话热读——换 key 不重启**：JSON 文件默认 `<数据目录>/sinicloud_asr.json`（字段 `appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`）；环境变量 `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` 覆盖文件值。凭据不硬编码、不打印、不入日志、不入仓库。发行包内置开放平台**试用凭据**，安装即用；正式使用请替换为自己的 key。完整 provider 矩阵见 [mcp/SHARED-V2.md](mcp/SHARED-V2.md)。
+凭据只走配置通道，**每会话热读——换 key 不重启**：JSON 文件默认 `<数据目录>/sinicloud_asr.json`（字段 `appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`）；环境变量 `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` 覆盖文件值。凭据不硬编码、不打印、不入日志、不入仓库。**旧 v0.1.0 ZIP** 内置开放平台试用凭据，正式使用请替换为自己的 key。**v0.1.1 MCPB** 不含云端凭据，仅接受 `disabled`（默认）或 `windows-speech`。完整源码 provider 矩阵见 [mcp/SHARED-V2.md](mcp/SHARED-V2.md)。
 
 ## 共享 v2 自适应定位
 

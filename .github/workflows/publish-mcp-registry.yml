@@ -1,0 +1,66 @@
+name: Publish to official MCP Registry
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  validate-windows-package:
+    if: github.repository == 'SonicloudTech/mouse-mcp' && github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '22'
+          architecture: x64
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Download, hash-check and safely extract the release
+        run: python mcp/scripts/verify-mcpb.py --output-dir "${{ runner.temp }}/mcpb-check"
+      - name: Validate the MCPB manifest with the official CLI
+        run: npx --yes --package=@anthropic-ai/mcpb@2.1.2 mcpb validate "${{ runner.temp }}/mcpb-check/bundle/manifest.json"
+      - name: Exercise real stdio and native SDK without hardware actions
+        run: node mcp/scripts/smoke-mcpb.mjs "${{ runner.temp }}/mcpb-check/bundle"
+
+  publish:
+    needs: validate-windows-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Check whether this immutable version already exists
+        id: existing
+        run: python3 mcp/scripts/check-registry.py
+      - name: Install pinned official publisher
+        if: steps.existing.outputs.state == 'absent'
+        run: |
+          curl --fail --location --retry 3 --output publisher.tar.gz https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+          echo 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz' | sha256sum --check
+          tar -xzf publisher.tar.gz mcp-publisher
+      - name: Validate Registry metadata and download URL
+        if: steps.existing.outputs.state == 'absent'
+        run: ./mcp-publisher validate server.json
+      - name: Authenticate with GitHub OIDC
+        if: steps.existing.outputs.state == 'absent'
+        run: ./mcp-publisher login github-oidc
+      - name: Publish the immutable version
+        if: steps.existing.outputs.state == 'absent'
+        run: ./mcp-publisher publish server.json
+      - name: Verify public Registry metadata
+        run: python3 mcp/scripts/check-registry.py --require-published

@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-[![release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+[![release](https://img.shields.io/badge/MCPB-v0.1.1-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1)
 [![code license](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)
 [![ASR](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#voice-dictation-pluggable-asr-providers)
@@ -17,15 +17,20 @@ Give AI agents a **real hardware mouse**. uMouse MCP is a Model Context Protocol
 
 | Package | Download | Requirements |
 |---|---|---|
+| MCPB · Windows x64 · v0.1.1 | [Download MCPB](https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.1/umouse-mcp-0.1.1-win-x64.mcpb) · [Release notes and SHA-256](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1) | MCPB-compatible client; compatible uMouse hardware; x64 Node.js 22+ |
 | Windows x64 · v0.1.0 | [Download ZIP](https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.0/umouse-mcp-os-win-x64-0.1.0.zip) · [Release notes and SHA-256](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0) | Compatible uMouse device and firmware; Node.js installed separately |
 
 [All releases](https://github.com/SonicloudTech/mouse-mcp/releases) · [Gitee release mirror](https://gitee.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
+
+**MCPB installation:** import the `.mcpb` into a client that supports MCPB Node extensions. Version 0.1.1 wraps the legacy 0.1.0 runtime, includes no cloud credentials, and defaults speech recognition to `disabled`; `windows-speech` is the optional local provider. Data defaults to `~/.umouse-mcp-mcpb`. See the [bilingual MCPB guide](mcpb/README.md). Registry metadata uses `io.github.SonicloudTech/mouse-mcp` in [`server.json`](server.json); [publication and validation](mcpb/PUBLISHING.md).
 
 The ZIP includes production Node dependencies, native SDK DLLs, the voice preview UI and VC runtime libraries. No `npm install` or compilation is required to use the release; Node.js itself is **not** bundled.
 
 **Release and source are different installation paths:** the v0.1.0 installer registers the legacy stdio entry, `mcp/dist/index.js`. The shared-v2 tools, native host and acceptance lab described below belong to the source implementation. This ZIP is not a complete shared-v2 bundle: it does not contain that native host or the acceptance lab. Use the installed server's tool list and the README shipped inside the ZIP for release-specific behavior.
 
 ## Quick start
+
+The following steps use the original ZIP. For MCPB, use the import instructions above, then perform the status/device checks in step 5.
 
 1. Install Node.js 22 x64 and confirm `node --version` works. Connect a compatible uMouse USB receiver/device and power on the mouse. For a device or firmware compatibility check, see [Hardware & support](#hardware--support).
 2. Download the ZIP above and extract it. Open the `umouse-mcp-os-win-x64` folder; keep it in a permanent location because client configuration points to this folder.
@@ -99,13 +104,13 @@ ASR here is not a black box tied to one vendor — it is a tiny interface contra
 
 | Provider (`UMSDK_ASR_PROVIDER`) | Notes |
 |---|---|
-| `sinicloud` (default on Windows) | Sonicloud open-platform streaming ASR: pure TypeScript, no DLL dependency; streams 16k/16bit/mono PCM, interim previews, low-balance warnings without dropping the stream |
+| `sinicloud` (default for the legacy ZIP/source on Windows) | Sonicloud open-platform streaming ASR: pure TypeScript, no DLL dependency; streams 16k/16bit/mono PCM, interim previews, low-balance warnings without dropping the stream |
 | `windows-speech` | Built-in Windows recognizer; offline, audio never leaves the machine |
 | `whisper-cpp` | Self-hosted whisper-cli + ggml model (paths configurable), offline CPU transcription |
 | `http` | Custom transcription endpoint: multipart WAV in, `{"text"}` out |
 | `disabled` | Dictation off; a missing provider degrades gracefully to `asr_unavailable` |
 
-Credentials travel only through configuration and are **hot-read per session — swap keys without a restart**: by default a JSON file at `<data-dir>/sinicloud_asr.json` (`appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`); environment variables `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` override the file. Never hardcoded, never printed, never logged, never committed. The release bundle ships a **trial credential** for the open platform so dictation works out of the box; replace it with your own key for production use. See [mcp/SHARED-V2.md](mcp/SHARED-V2.md) for the full provider matrix.
+Credentials travel only through configuration and are **hot-read per session — swap keys without a restart**: by default a JSON file at `<data-dir>/sinicloud_asr.json` (`appId / apiKey / apiSecret / userId / lanid / streamUrl / tokenUrl`); environment variables `UMSDK_ASR_APP_ID / UMSDK_ASR_API_KEY / UMSDK_ASR_API_SECRET / …` override the file. Never hardcoded, never printed, never logged, never committed. The **legacy v0.1.0 ZIP** ships a trial credential for the open platform; replace it with your own key for production use. The **v0.1.1 MCPB** contains no cloud credentials and accepts only `disabled` (default) or `windows-speech`. See [mcp/SHARED-V2.md](mcp/SHARED-V2.md) for the full source provider matrix.
 
 ## Shared-v2 adaptive positioning
 

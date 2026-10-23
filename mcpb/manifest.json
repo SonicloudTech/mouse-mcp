@@ -1,0 +1,56 @@
+{
+  "manifest_version": "0.3",
+  "name": "umouse-mcp",
+  "display_name": "uMouse MCP — Windows x64",
+  "version": "0.1.1",
+  "description": "Hardware mouse control and optional local speech recognition with a compatible uMouse device on Windows x64.",
+  "long_description": "MCPB 0.1.1 packages the existing legacy v0.1.0 stdio runtime. Requires compatible uMouse hardware and firmware, Windows x64, and an x64 Node.js 22 or later runtime. This bundle does not use the shared-v2 daemon. Speech recognition is disabled by default; Windows Speech can be enabled for local recognition. No cloud speech credentials are included. Sample and server code licensing does not replace the separate native SDK and third-party notices included in the bundle.",
+  "author": {
+    "name": "SonicloudTech",
+    "url": "https://github.com/SonicloudTech"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SonicloudTech/mouse-mcp.git"
+  },
+  "homepage": "https://github.com/SonicloudTech/mouse-mcp",
+  "support": "https://github.com/SonicloudTech/mouse-mcp/issues",
+  "server": {
+    "type": "node",
+    "entry_point": "launcher.cjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/launcher.cjs"],
+      "env": {
+        "UMSDK_LIB_PATH": "${__dirname}/lib/uMouseSdk.dll",
+        "TYPER_LIB_PATH": "${__dirname}/lib/typer.dll",
+        "UMSDK_DATA_DIR": "${user_config.data_dir}",
+        "UMSDK_ASR_PROVIDER": "${user_config.asr_provider}",
+        "UMSDK_TAKEOVER": "0"
+      }
+    }
+  },
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": ["win32"],
+    "runtimes": {
+      "node": ">=22.0.0"
+    }
+  },
+  "user_config": {
+    "data_dir": {
+      "type": "directory",
+      "title": "Local data directory",
+      "description": "Stores recordings, logs, and state. Leave blank to use ~/.umouse-mcp-mcpb outside the installed bundle.",
+      "default": "",
+      "required": false
+    },
+    "asr_provider": {
+      "type": "string",
+      "title": "Local speech recognition",
+      "description": "Enter disabled or windows-speech. Windows Speech uses the local Windows recognizer and requires an installed speech language. This bundle does not include cloud speech credentials.",
+      "default": "disabled",
+      "required": false
+    }
+  }
+}

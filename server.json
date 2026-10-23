@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.SonicloudTech/mouse-mcp",
+  "title": "uMouse MCP",
+  "description": "USB HID mouse control and voice dictation for Windows x64. Requires compatible uMouse hardware.",
+  "version": "0.1.1",
+  "repository": {
+    "url": "https://github.com/SonicloudTech/mouse-mcp",
+    "source": "github",
+    "id": "1426577182"
+  },
+  "websiteUrl": "https://github.com/SonicloudTech/mouse-mcp",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/SonicloudTech/mouse-mcp/releases/download/v0.1.1/umouse-mcp-0.1.1-win-x64.mcpb",
+      "version": "0.1.1",
+      "fileSha256": "bcfb7feaeaaaec41dac45492482932f6def986c1be154e3d39b6b5dd7f2d6552",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}
