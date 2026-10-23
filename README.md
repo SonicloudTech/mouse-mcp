@@ -3,6 +3,7 @@
 **English** | [简体中文](README.zh-CN.md)
 
 [![release](https://img.shields.io/badge/MCPB-v0.1.1-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-published-008060)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.SonicloudTech%2Fmouse-mcp/versions/latest)
 [![code license](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)
 [![ASR](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#voice-dictation-pluggable-asr-providers)
@@ -22,7 +23,7 @@ Give AI agents a **real hardware mouse**. uMouse MCP is a Model Context Protocol
 
 [All releases](https://github.com/SonicloudTech/mouse-mcp/releases) · [Gitee release mirror](https://gitee.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
 
-**MCPB installation:** import the `.mcpb` into a client that supports MCPB Node extensions. Version 0.1.1 wraps the legacy 0.1.0 runtime, includes no cloud credentials, and defaults speech recognition to `disabled`; `windows-speech` is the optional local provider. Data defaults to `~/.umouse-mcp-mcpb`. See the [bilingual MCPB guide](mcpb/README.md). Registry metadata uses `io.github.SonicloudTech/mouse-mcp` in [`server.json`](server.json); [publication and validation](mcpb/PUBLISHING.md).
+**MCPB installation:** import the `.mcpb` into a client that supports MCPB Node extensions. Version 0.1.1 wraps the legacy 0.1.0 runtime, includes no cloud credentials, and defaults speech recognition to `disabled`; `windows-speech` is the optional local provider. Data defaults to `~/.umouse-mcp-mcpb`. See the [bilingual MCPB guide](mcpb/README.md). Published in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.SonicloudTech%2Fmouse-mcp/versions/latest) as `io.github.SonicloudTech/mouse-mcp`; metadata in [`server.json`](server.json), [publication and validation](mcpb/PUBLISHING.md).
 
 The ZIP includes production Node dependencies, native SDK DLLs, the voice preview UI and VC runtime libraries. No `npm install` or compilation is required to use the release; Node.js itself is **not** bundled.
 

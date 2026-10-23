@@ -3,6 +3,7 @@
 [English](README.md) | **简体中文**
 
 [![release](https://img.shields.io/badge/MCPB-v0.1.1-blue)](https://github.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.1)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-published-008060)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.SonicloudTech%2Fmouse-mcp/versions/latest)
 [![code license](https://img.shields.io/badge/code-MIT-blue.svg)](LICENSE)
 ![platform](https://img.shields.io/badge/platform-Windows%20x64-6f42c1.svg)
 [![ASR](https://img.shields.io/badge/ASR-pluggable-6f42c1.svg)](#语音听写asr-provider-可插拔)
@@ -22,7 +23,7 @@
 
 [全部版本](https://github.com/SonicloudTech/mouse-mcp/releases) · [Gitee 发布镜像](https://gitee.com/SonicloudTech/mouse-mcp/releases/tag/v0.1.0)
 
-**MCPB 安装：** 在支持 MCPB Node 扩展的客户端中导入 `.mcpb`。0.1.1 封装旧版 0.1.0 运行文件，不含云端凭据，语音识别默认 `disabled`，可选本地 `windows-speech`。数据默认存入 `~/.umouse-mcp-mcpb`，详见 [MCPB 中英文指南](mcpb/README.md)。Registry 元数据名称为 `io.github.SonicloudTech/mouse-mcp`，定义于 [`server.json`](server.json)，参见[发布与验证说明](mcpb/PUBLISHING.md)。
+**MCPB 安装：** 在支持 MCPB Node 扩展的客户端中导入 `.mcpb`。0.1.1 封装旧版 0.1.0 运行文件，不含云端凭据，语音识别默认 `disabled`，可选本地 `windows-speech`。数据默认存入 `~/.umouse-mcp-mcpb`，详见 [MCPB 中英文指南](mcpb/README.md)。已以 `io.github.SonicloudTech/mouse-mcp` 发布至[官方 MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.SonicloudTech%2Fmouse-mcp/versions/latest)，元数据定义于 [`server.json`](server.json)，参见[发布与验证说明](mcpb/PUBLISHING.md)。
 
 ZIP 包内包含生产环境 Node 依赖、原生 SDK DLL、语音预览浮窗和 VC 运行库。使用发布包无需执行 `npm install` 或编译；**包内不含 Node.js 本身**。
 
