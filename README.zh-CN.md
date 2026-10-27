@@ -179,6 +179,3 @@ node run-matrix.mjs
 ## 许可
 
 MCP 服务器代码以 [MIT](LICENSE) 发布。原生 SDK 以闭源 DLL + 公共头（`include/umouse_sdk.h`）形式提供。
-
-## 鸣谢
-AtomGit:在国内托管 AIRI，帮助中国大陆用户更快访问项目与下载Release。
