@@ -12,7 +12,7 @@
 
 **需要兼容的 uMouse 硬件与固件、Windows x64，以及单独安装的 Node.js 运行时（使用 Node.js 22 x64）。** 普通 USB 鼠标不能直接替代。原生 SDK 二进制与采用 MIT 许可的服务器代码有不同的许可范围，详见[许可](#许可)。
 
-[下载](#下载) · [快速开始](#快速开始) · [参考演示](#参考演示) · [文档](#文档) · [获取硬件与支持](#硬件与支持) · [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk)
+[下载](#下载) · [快速开始](#快速开始) · [参考演示](#参考演示) · [文档](#文档) · [兼容性与常见问题](#faq) · [获取硬件与支持](#硬件与支持) · [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk)
 
 ## 下载
 
@@ -142,6 +142,34 @@ node run-matrix.mjs
 - 锁屏 / UAC / 安全桌面：按键动作被 `button_feedback_input_desktop_unavailable` 拒绝——这是安全属性，不是缺陷。
 - `effectConfirmed` 恒为 `false`：传输成功 ≠ 应用生效，效果以验收实验室的页面证据为准。
 - ASR 凭据只经本地配置文件与环境变量注入：不入仓库、不打印、不入日志；`recover` 必须人工携带 `--hardware-reset-confirmed`。
+
+<a id="faq"></a>
+
+## 硬件鼠标 MCP 常见问题
+
+### 普通 USB 鼠标或蓝牙鼠标能用吗？
+
+不能直接使用。uMouse MCP 需要实现相应硬件控制协议的兼容 uMouse 设备和固件。普通鼠标、纯软件光标控制器或单独返回的 SDK 版本号，都不能证明兼容性。选包前请通过[硬件与支持](#硬件与支持)确认设备和固件。
+
+### MCP 客户端应该安装哪个包？
+
+支持 MCPB Node 扩展的客户端使用 [v0.1.1 MCPB](mcpb/README.md)；stdio MCP 客户端可使用 [v0.1.0 ZIP 与手动配置](#快速开始)。两者都需要 Windows x64、Node.js 22 x64 和兼容硬件。MCPB 0.1.1 封装旧版 0.1.0 运行文件，这两个发布包均不包含共享 v2 原生宿主和验收实验室。使用源码专属示例前，先核对已安装服务器的工具列表。
+
+### 这个 MCP 服务器支持 macOS 或 Linux 吗？
+
+公开 MCP 发布包面向 Windows x64。独立的 [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk) 有自己的应用接入平台包，其平台范围不代表本 MCP 服务器已经支持 macOS 或 Linux。
+
+### 不接云端 ASR 也能语音听写吗？
+
+MCPB 默认关闭听写，可选本地 `windows-speech`。包含 `whisper-cpp` 在内的其他 provider 属于[源码的服务配置](mcp/SHARED-V2.md)，并非都能在 MCPB 中使用。本地 provider 需要相应的运行环境、语言或模型配置。鼠标控制本身不要求开启云端语音服务。
+
+### 怎样确认硬件动作真的生效？
+
+先调用 `umouse_status`、`umouse_get_capabilities` 和 `umouse_list_devices`，再在测试窗口中执行动作，检查光标及应用的可见响应。SDK 可访问、传输回执成功与应用生效是不同层面的证据。完整共享 v2 源码构建可使用[硬件验收实验室](mcp/acceptance/README.md)。
+
+### 应该接入 mouse-mcp 还是 mouse-sdk？
+
+要通过 MCP 向 AI 智能体提供硬件鼠标动作与语音输入，选择本仓库；要在自己的 C/C++、C#、Python 或 Electron 应用中接收设备事件和音频，选择 [mouse-sdk](https://github.com/SonicloudTech/mouse-sdk)。分别核对两个项目的硬件、交付包和许可要求。
 
 ## 文档
 

@@ -12,7 +12,7 @@ Give AI agents a **real hardware mouse**. uMouse MCP is a Model Context Protocol
 
 **Requires compatible uMouse hardware and firmware, Windows x64, and a separately installed Node.js runtime (use Node.js 22 x64).** An ordinary USB mouse is not sufficient. The MIT license covers the server code; native SDK binaries have separate terms. See [License](#license).
 
-[Download](#download) · [Quick start](#quick-start) · [Reference demos](#reference-demos) · [Documentation](#documentation) · [Get hardware / support](#hardware--support) · [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk)
+[Download](#download) · [Quick start](#quick-start) · [Reference demos](#reference-demos) · [Documentation](#documentation) · [Compatibility & FAQ](#faq) · [Get hardware / support](#hardware--support) · [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk)
 
 ## Download
 
@@ -142,6 +142,34 @@ node run-matrix.mjs
 - Locked screen / UAC / secure desktop: key actions are rejected with `button_feedback_input_desktop_unavailable` — that is a safety property, not a bug.
 - `effectConfirmed` is always `false`: transport success ≠ application effect; the acceptance lab's page evidence is the ground truth.
 - ASR credentials enter only via local config file and environment variables — never committed, printed or logged; `recover` requires a human carrying `--hardware-reset-confirmed`.
+
+<a id="faq"></a>
+
+## Hardware mouse MCP: frequently asked questions
+
+### Can I use an ordinary USB or Bluetooth mouse?
+
+No. uMouse MCP needs compatible uMouse hardware and firmware that implement its hardware-control protocol. A normal mouse, a software-only cursor controller, or the SDK version string alone does not establish compatibility. Confirm the device and firmware through [hardware support](#hardware--support) before choosing a package.
+
+### Which package should I use with an MCP client?
+
+Use the [v0.1.1 MCPB](mcpb/README.md) with a client that supports MCPB Node extensions, or the [v0.1.0 ZIP and manual configuration](#quick-start) for a stdio MCP client. Both require Windows x64, Node.js 22 x64, and compatible hardware. MCPB 0.1.1 packages the legacy 0.1.0 runtime; neither release includes the shared-v2 native host or acceptance lab. Check the installed server's tool list before using source-only examples.
+
+### Does this MCP server support macOS or Linux?
+
+The published MCP packages target Windows x64. The separate [uMouse SDK](https://github.com/SonicloudTech/mouse-sdk) has its own platform packages for application integration; those packages do not provide macOS or Linux support for this MCP server.
+
+### Can voice dictation work without a cloud ASR service?
+
+The MCPB package defaults to dictation disabled and optionally uses the local `windows-speech` provider. Other providers, including `whisper-cpp`, belong to the [source provider configuration](mcp/SHARED-V2.md); they are not all available in MCPB. Local providers need their own runtime, language or model setup. Mouse control does not require enabling a cloud speech provider.
+
+### How do I verify that the hardware action actually worked?
+
+Start with `umouse_status`, `umouse_get_capabilities`, and `umouse_list_devices`. Then request an action in a test window and check the cursor and the application's visible response. SDK access and a successful transport receipt are separate from application effects. For a complete shared-v2 source build, use the [hardware acceptance lab](mcp/acceptance/README.md).
+
+### Should I integrate mouse-mcp or mouse-sdk?
+
+Choose this repository to expose hardware mouse actions and voice input to an AI agent through MCP. Choose [mouse-sdk](https://github.com/SonicloudTech/mouse-sdk) to receive device events and audio in your own C/C++, C#, Python, or Electron application. Keep each project's hardware, package, and licensing requirements separate.
 
 ## Documentation
 
